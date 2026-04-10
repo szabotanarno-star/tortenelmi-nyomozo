@@ -1,1 +1,856 @@
+import React, { useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { AlertCircle, Flame, Thermometer, Search, Trophy, FileText } from "lucide-react";
 
+const CASE_DATA = {
+  title: "A két példány rejtélye",
+  subtitle: "Versailles, 1919 – béketárgyalások",
+  intro:
+    "Egy bizalmas dokumentum — amely egy vitatott határvonalról szólt — nem tűnt el, hanem megváltozott. Az eredeti példány helyett egy módosított verzió került elő. A különbség apró, de súlyos következményekkel járhat.",
+  learningGoal:
+    "A megoldáshoz nem elég egyetlen gyanúsítottat találni: az összehangolt cselekvést, a motivációt, a lehetőséget és a koordinációt is fel kell ismerni.",
+  suspects: [
+    "Elena Kovács",
+    "Dubois",
+    "Harrington",
+    "Woodrow Wilson",
+    "A gépírónő",
+    "Pierre (futár)",
+    "Marie (takarító)",
+  ],
+  solution: {
+    culprits: ["Elena Kovács", "Dubois"],
+    summary:
+      "A módosítás a hivatalos példány diktálása és gépelése során történt. Elena a nyelvi árnyalatokat kihasználva olyan megfogalmazást javasolt, amely nyelvileg korrekt maradt, de politikailag eltérő jelentést hordozott. Dubois adminisztratív hozzáféréssel és felügyeleti szereppel biztosította, hogy a módosított változat kerüljön véglegesítésre és gyors továbbításra.",
+    whyTwo:
+      "Két emberre azért volt szükség, mert a láthatatlan módosításhoz egyszerre kellett nyelvi kontroll és adminisztratív hozzáférés. Egyikük önmagában nem tudta volna ilyen észrevétlenül végrehajtani a változtatást.",
+  },
+  cards: [
+    { id: 1, kind: "fact", title: "1. kártya", text: "A dokumentumot egy zárt tárgyaláson vitatták meg.", tags: ["eset", "keret"] },
+    { id: 2, kind: "fact", title: "2. kártya", text: "A jelenlévők: Woodrow Wilson, Dubois francia tisztviselő, Harrington brit szakértő és Elena Kovács tolmács.", tags: ["szereplők"] },
+    { id: 3, kind: "fact", title: "3. kártya", text: "A dokumentumból két példány készült: egy hivatalos és egy munkapéldány.", tags: ["kulcsinformáció"] },
+    { id: 4, kind: "fact", title: "4. kártya", text: "A módosítás csak a hivatalos példányban jelent meg.", tags: ["kulcsinformáció"] },
+    { id: 5, kind: "background", title: "5. kártya", text: "A béketárgyalások során a dokumentumokat gyakran több nyelven kezelték, és a fordításoknak politikai jelentősége lehetett.", tags: ["háttér", "hasznos"] },
+    { id: 6, kind: "fact", title: "6. kártya", text: "Elena Kovács több nyelven beszélt, és részt vett a dokumentumok értelmezésében.", tags: ["szerep", "nyelv"] },
+    { id: 7, kind: "fact", title: "7. kártya", text: "A munkapéldányon kézzel írt jegyzetek voltak.", tags: ["forrás"] },
+    { id: 8, kind: "fact", title: "8. kártya", text: "A hivatalos példány gépelt volt.", tags: ["kulcsinformáció"] },
+    { id: 9, kind: "fact", title: "9. kártya", text: "A módosítás egyetlen mondatot érintett, amely egy határvonal értelmezését változtatta meg.", tags: ["jelentés"] },
+    { id: 10, kind: "misleading", title: "10. kártya", text: "Harrington nyíltan nem értett egyet a javasolt határokkal.", tags: ["félrevezető", "motiváció"] },
+    { id: 11, kind: "fact", title: "11. kártya", text: "A dokumentumokat Dubois felügyelte.", tags: ["hozzáférés"] },
+    { id: 12, kind: "fact", title: "12. kártya", text: "A gépelt példányt egy külön helyiségben készítették el.", tags: ["folyamat"] },
+    { id: 13, kind: "fact", title: "13. kártya", text: "A gépelés után a dokumentumot rövid időre felügyelet nélkül hagyták.", tags: ["lehetőség"] },
+    { id: 14, kind: "background", title: "14. kártya", text: "A korszakban a dokumentumok véglegesítése során adminisztratív személyzet is hozzáférhetett a végső változathoz.", tags: ["háttér", "hasznos"] },
+    { id: 15, kind: "fact", title: "15. kártya", text: "A módosított mondat nyelvileg korrekt volt, de jelentésében eltért az eredetitől.", tags: ["nyelv", "kulcsinformáció"] },
+    { id: 16, kind: "fact", title: "16. kártya", text: "A munkapéldányban az eredeti megfogalmazás szerepelt.", tags: ["összevetés"] },
+    { id: 17, kind: "irrelevant", title: "17. kártya", text: "Wilson fáradt volt, és korán távozott.", tags: ["irreleváns"] },
+    { id: 18, kind: "fact", title: "18. kártya", text: "Elena jelen volt a fordítások véglegesítésénél.", tags: ["hozzáférés", "nyelv"] },
+    { id: 19, kind: "fact", title: "19. kártya", text: "Dubois rövid időre elhagyta a helyiséget a gépelés után.", tags: ["időzítés"] },
+    { id: 20, kind: "fact", title: "20. kártya", text: "A gépírónő szerint: „Csak azt írtam le, amit diktáltak.”", tags: ["vallomás", "kulcsinformáció"] },
+    { id: 21, kind: "misleading", title: "21. kártya", text: "A brit delegáció számára kedvezőbb volt a módosított határ.", tags: ["félrevezető", "általános motiváció"] },
+    { id: 22, kind: "fact", title: "22. kártya", text: "A diktálás során két személy is jelen volt.", tags: ["kulcsinformáció", "koordináció"] },
+    { id: 23, kind: "fact", title: "23. kártya", text: "A módosítás nem tűnik véletlen hibának.", tags: ["szándékosság"] },
+    { id: 24, kind: "fact", title: "24. kártya", text: "A végső dokumentumot gyorsan továbbították.", tags: ["folyamat", "lefedés"] },
+    { id: 25, kind: "fact", title: "25. kártya", text: "Pierre, a futár csak a már lezárt és lepecsételt dokumentumokat szállította el, és nem volt jelen a diktálás vagy a gépelés során.", tags: ["kizárható", "nincs hozzáférés"] },
+    { id: 26, kind: "fact", title: "26. kártya", text: "Marie, a takarító csak a tárgyalások után lépett be a helyiségbe, amikor a dokumentum már elkészült és eltávolították.", tags: ["kizárható", "időben kívül"] },
+  ],
+} as const;
+
+const HOT_KEYWORDS = [
+  "hivatalos példány",
+  "gépelés",
+  "diktál",
+  "diktálás",
+  "nyelv",
+  "fordítás",
+  "elena",
+  "dubois",
+  "két ember",
+  "együttműködés",
+  "koordináció",
+  "hozzáférés",
+  "adminisztratív",
+  "véglegesítés",
+] as const;
+
+const WARM_KEYWORDS = [
+  "harrington",
+  "motiváció",
+  "lehetőség",
+  "szándékos",
+  "munkapéldány",
+  "hivatalos",
+  "külön helyiség",
+  "jelen volt",
+  "felügyelte",
+  "mondat",
+  "határ",
+] as const;
+
+const COLD_KEYWORDS = [
+  "wilson fáradt",
+  "időjárás",
+  "korán távozott",
+  "biztos a brit",
+  "csak azért mert british",
+  "csak azért mert brit",
+] as const;
+
+const TRACK_KEYWORDS = {
+  motivation: ["motiváció", "érdek", "brit", "harrington", "szándékos", "miért", "haszon"],
+  opportunity: ["hozzáférés", "felügyelte", "külön helyiség", "jelen volt", "hivatalos példány", "gépelés", "diktálás", "adminisztratív"],
+  coordination: ["két ember", "együttműködés", "koordináció", "diktál", "fordítás", "nyelv", "elena", "dubois", "ketten"],
+} as const;
+
+const IMAGE_KEYWORDS = [
+  "képen",
+  "a képen",
+  "látható",
+  "elhelyezkedés",
+  "testtartás",
+  "gesztus",
+  "asztal",
+  "terem",
+  "tárgyaló",
+  "környezet",
+  "viszony",
+  "forrás",
+  "forráson",
+  "forráskép",
+] as const;
+
+type TrackProgress = {
+  motivation: number;
+  opportunity: number;
+  coordination: number;
+};
+
+type ThermoState = {
+  label: string;
+  value: number;
+  color: string;
+};
+
+type HistoryItem = {
+  type: "question" | "conclusion" | "accusation" | "exclusion";
+  content: string;
+  result: {
+    level: "hideg" | "meleg" | "forró";
+    delta: number;
+    feedback: string;
+    imageBonus?: number;
+  };
+  cardNumber: number;
+};
+
+function normalizeText(text: string) {
+  return (text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function evaluateInput(input: string, type: "question" | "conclusion", revealedCount: number) {
+  const text = normalizeText(input);
+
+  let delta = 0;
+  let level: "hideg" | "meleg" | "forró" = "hideg";
+  let feedback = "Ez most még nem visz közelebb a megoldás fő logikájához.";
+
+  const hasHot = HOT_KEYWORDS.some((k) => text.includes(normalizeText(k)));
+  const hasWarm = WARM_KEYWORDS.some((k) => text.includes(normalizeText(k)));
+  const hasCold = COLD_KEYWORDS.some((k) => text.includes(normalizeText(k)));
+  const mentionsImage = IMAGE_KEYWORDS.some((k) => text.includes(normalizeText(k)));
+
+  if (!text) {
+    return { level: "hideg" as const, delta: 0, feedback: "Adj meg egy kérdést vagy következtetést.", imageBonus: 0 };
+  }
+
+  if (hasCold) {
+    delta = 0;
+    level = "hideg";
+    feedback = "Valós részletre építesz, de ez önmagában nem döntő a nyomozás szempontjából.";
+  } else if (hasHot) {
+    delta = 14;
+    level = "forró";
+    feedback = "Lényegi irány. Jó eséllyel a módosítás módjára, a hozzáférésre vagy az együttműködésre tapintottál rá.";
+  } else if (hasWarm) {
+    delta = 8;
+    level = "meleg";
+    feedback = "Részben jó irány. Érdemes tovább pontosítani: ki, mikor és milyen hozzáféréssel avatkozhatott be?";
+  } else {
+    delta = type === "question" ? 4 : 5;
+    level = "meleg";
+    feedback = "Van benne használható gondolat, de még hiányzik a kulcsösszefüggés.";
+  }
+
+  let imageBonus = 0;
+  if (mentionsImage) {
+    imageBonus = 5;
+    delta += imageBonus;
+    feedback += " A képre mint forrásra való tudatos hivatkozás ezért plusz pontot ér.";
+  }
+
+  if (revealedCount < 6 && delta > 10) {
+    delta = 10;
+    feedback = mentionsImage
+      ? "Erős felvetés. Még kevés adat áll rendelkezésre, de ez már ígéretes irány. A képi forrás használata külön erősíti a megfigyelést."
+      : "Erős felvetés. Még kevés adat áll rendelkezésre, de ez már ígéretes irány.";
+  }
+
+  return { level, delta, feedback, imageBonus };
+}
+
+function checkAccusation(suspectsText: string, reasoningText: string) {
+  const suspectsNormalized = normalizeText(suspectsText);
+  const reasoning = normalizeText(reasoningText);
+
+  const hasElena = suspectsNormalized.includes("elena");
+  const hasDubois = suspectsNormalized.includes("dubois");
+  const excludesWrongSolo =
+    !suspectsNormalized.includes("harrington") &&
+    !suspectsNormalized.includes("wilson") &&
+    !suspectsNormalized.includes("gepirono") &&
+    !suspectsNormalized.includes("gépírónő");
+
+  const mentionsMethod =
+    reasoning.includes("dikt") ||
+    reasoning.includes("gepel") ||
+    reasoning.includes("hivatalos péld") ||
+    reasoning.includes("ford") ||
+    reasoning.includes("nyelv");
+
+  const mentionsCoordination =
+    reasoning.includes("egyutt") ||
+    reasoning.includes("ketten") ||
+    reasoning.includes("két") ||
+    reasoning.includes("koordin") ||
+    (reasoning.includes("egyik") && reasoning.includes("masik"));
+
+  const isCorrect = hasElena && hasDubois && excludesWrongSolo && mentionsMethod && mentionsCoordination;
+
+  return {
+    isCorrect,
+    explanation: isCorrect
+      ? "Helyes megoldás. Felismerted, hogy a módosítás a hivatalos példány diktálása és gépelése során történt, és ahhoz nyelvi plusz adminisztratív kontroll is kellett."
+      : "Ez a gyanúsítás még nem áll össze teljesen. A helyes megoldáshoz nemcsak a motivációt, hanem a hozzáférést, a diktálás szerepét és a két ember összehangolt munkáját is meg kell indokolni.",
+  };
+}
+
+function kindBadge(kind: string) {
+  switch (kind) {
+    case "background":
+      return <Badge variant="secondary">Háttérinformáció</Badge>;
+    case "misleading":
+      return <Badge variant="destructive">Félrevezető lehet</Badge>;
+    case "irrelevant":
+      return <Badge variant="outline">Lehet irreleváns</Badge>;
+    default:
+      return <Badge>Közvetlen információ</Badge>;
+  }
+}
+
+function thermometerTone(level: "hideg" | "meleg" | "forró"): ThermoState {
+  if (level === "forró") return { label: "Forró", value: 90, color: "bg-green-500" };
+  if (level === "meleg") return { label: "Meleg", value: 60, color: "bg-yellow-400" };
+  return { label: "Hideg", value: 20, color: "bg-red-500" };
+}
+
+function getTrackDeltas(input: string): TrackProgress {
+  const text = normalizeText(input);
+  const deltas: TrackProgress = { motivation: 0, opportunity: 0, coordination: 0 };
+
+  Object.entries(TRACK_KEYWORDS).forEach(([track, keywords]) => {
+    const matches = keywords.filter((k) => text.includes(normalizeText(k))).length;
+    if (matches >= 2) deltas[track as keyof TrackProgress] = 12;
+    else if (matches === 1) deltas[track as keyof TrackProgress] = 7;
+  });
+
+  return deltas;
+}
+
+function trackStatus(value: number) {
+  if (value >= 70) return { label: "Jó irány", color: "bg-green-500" };
+  if (value >= 35) return { label: "Bizonytalan", color: "bg-yellow-400" };
+  return { label: "Gyenge", color: "bg-red-500" };
+}
+
+function runSelfTests() {
+  const tests = [
+    () => normalizeText("Árvíztűrő Tükörfúrógép") === "arvizturo tukorfurogep",
+    () => evaluateInput("A képen látható elhelyezkedés fontos.", "conclusion", 8).imageBonus === 5,
+    () => getTrackDeltas("Duboisnak hozzáférése volt, és Elena nyelvi szerepe is fontos").opportunity > 0,
+    () => checkAccusation("Elena Kovács és Dubois", "A diktálás és a nyelvi kontroll miatt két ember kellett").isCorrect,
+  ];
+
+  return tests.every((test) => {
+    try {
+      return test();
+    } catch {
+      return false;
+    }
+  });
+}
+
+export default function TortenelmiNyomozoApp() {
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [revealedCount, setRevealedCount] = useState(1);
+  const [interactionMode, setInteractionMode] = useState<"question" | "conclusion">("question");
+  const [currentInput, setCurrentInput] = useState("");
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [trackProgress, setTrackProgress] = useState<TrackProgress>({ motivation: 0, opportunity: 0, coordination: 0 });
+  const [imageSourceScore, setImageSourceScore] = useState(0);
+  const [score, setScore] = useState(0);
+  const [excludedSuspects, setExcludedSuspects] = useState<string[]>([]);
+  const [exclusionReason, setExclusionReason] = useState("");
+  const [lastThermo, setLastThermo] = useState<ThermoState>({ label: "Kezdés", value: 0, color: "bg-slate-400" });
+  const [accusationNames, setAccusationNames] = useState("");
+  const [accusationReason, setAccusationReason] = useState("");
+  const [gameOver, setGameOver] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
+
+  const visibleCards = useMemo(() => CASE_DATA.cards.slice(0, revealedCount).reverse(), [revealedCount]);
+  const hasMoreCards = revealedCount < CASE_DATA.cards.length;
+  const selfTestsPassed = useMemo(() => runSelfTests(), []);
+
+  const handleAnalyze = () => {
+    const result = evaluateInput(currentInput, interactionMode, revealedCount);
+    const thermo = thermometerTone(result.level);
+    const deltas = getTrackDeltas(currentInput);
+
+    setProgress((prev) => Math.min(100, prev + result.delta));
+    setImageSourceScore((prev) => Math.min(100, prev + result.imageBonus * 4));
+    setTrackProgress((prev) => ({
+      motivation: Math.min(100, prev.motivation + deltas.motivation),
+      opportunity: Math.min(100, prev.opportunity + deltas.opportunity),
+      coordination: Math.min(100, prev.coordination + deltas.coordination),
+    }));
+    setLastThermo(thermo);
+    setHistory((prev) => [
+      {
+        type: interactionMode,
+        content: currentInput,
+        result,
+        cardNumber: revealedCount,
+      },
+      ...prev,
+    ]);
+    setCurrentInput("");
+
+    if (hasMoreCards) {
+      setRevealedCount((prev) => prev + 1);
+    }
+  };
+
+  const handleExclude = (name: string) => {
+    if ((name.includes("Pierre") && revealedCount < 25) || (name.includes("Marie") && revealedCount < 26)) {
+      setHistory((prev) => [
+        {
+          type: "exclusion",
+          content: `Kizárási kísérlet: ${name}`,
+          result: {
+            level: "hideg",
+            delta: 0,
+            feedback: "Még nincs elegendő információd ennek a szereplőnek a kizárásához. Várj további kártyákra.",
+            imageBonus: 0,
+          },
+          cardNumber: revealedCount,
+        },
+        ...prev,
+      ]);
+      return;
+    }
+
+    if (excludedSuspects.includes(name) || gameOver) return;
+
+    const reason = normalizeText(exclusionReason);
+    const isCorrectExclusion = name.includes("Pierre") || name.includes("Marie");
+    const hasJustification =
+      reason.includes("nem volt jelen") ||
+      reason.includes("nem volt ott") ||
+      reason.includes("nincs hozzaferes") ||
+      reason.includes("nincs hozzáférés") ||
+      reason.includes("csak utana") ||
+      reason.includes("csak utána") ||
+      reason.includes("idoben") ||
+      reason.includes("időben");
+
+    if (isCorrectExclusion && hasJustification) {
+      setScore((prev) => prev + 150);
+      setHistory((prev) => [
+        {
+          type: "exclusion",
+          content: `Kizárás: ${name} – indoklás: ${exclusionReason}`,
+          result: {
+            level: "forró",
+            delta: 8,
+            feedback: "Helyes és indokolt kizárás. Pontosan azonosítottad a hozzáférés vagy időzítés hiányát.",
+            imageBonus: 0,
+          },
+          cardNumber: revealedCount,
+        },
+        ...prev,
+      ]);
+    } else if (isCorrectExclusion) {
+      setScore((prev) => prev + 50);
+      setHistory((prev) => [
+        {
+          type: "exclusion",
+          content: `Kizárás: ${name}`,
+          result: {
+            level: "meleg",
+            delta: 4,
+            feedback: "A kizárás jó, de az indoklás hiányos. Miért nem volt lehetősége?",
+            imageBonus: 0,
+          },
+          cardNumber: revealedCount,
+        },
+        ...prev,
+      ]);
+    } else {
+      setScore((prev) => prev - 50);
+      setHistory((prev) => [
+        {
+          type: "exclusion",
+          content: `Kizárás: ${name}`,
+          result: {
+            level: "hideg",
+            delta: 0,
+            feedback: "Ez a kizárás nem megalapozott. Vizsgáld meg a hozzáférést és az időzítést.",
+            imageBonus: 0,
+          },
+          cardNumber: revealedCount,
+        },
+        ...prev,
+      ]);
+    }
+
+    setExcludedSuspects((prev) => [...prev, name]);
+    setExclusionReason("");
+  };
+
+  const handleAccusation = () => {
+    const result = checkAccusation(accusationNames, accusationReason);
+
+    if (result.isCorrect) {
+      setScore((prev) => prev + 1000);
+      setGameOver(true);
+      setShowSolution(true);
+      setLastThermo({ label: "Megoldva", value: 100, color: "bg-green-500" });
+      setProgress(100);
+      setTrackProgress({ motivation: 100, opportunity: 100, coordination: 100 });
+      setImageSourceScore(100);
+    } else {
+      setScore((prev) => prev - 500);
+      setHistory((prev) => [
+        {
+          type: "accusation",
+          content: `Gyanúsítás: ${accusationNames}`,
+          result: {
+            level: "hideg",
+            delta: 0,
+            feedback: result.explanation,
+            imageBonus: 0,
+          },
+          cardNumber: revealedCount,
+        },
+        ...prev,
+      ]);
+      setLastThermo({ label: "Hideg", value: 20, color: "bg-red-500" });
+    }
+  };
+
+  const resetGame = () => {
+    setShowImageModal(false);
+    setRevealedCount(1);
+    setInteractionMode("question");
+    setCurrentInput("");
+    setHistory([]);
+    setProgress(0);
+    setTrackProgress({ motivation: 0, opportunity: 0, coordination: 0 });
+    setImageSourceScore(0);
+    setScore(0);
+    setExcludedSuspects([]);
+    setExclusionReason("");
+    setLastThermo({ label: "Kezdés", value: 0, color: "bg-slate-400" });
+    setAccusationNames("");
+    setAccusationReason("");
+    setGameOver(false);
+    setShowSolution(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-slate-50 to-emerald-100 p-4 md:p-8 font-serif">
+      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="space-y-6">
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <Search className="h-4 w-4" />
+                    Történelmi nyomozás
+                  </div>
+                  <CardTitle className="text-3xl font-bold tracking-tight">{CASE_DATA.title}</CardTitle>
+                  <p className="text-sm text-slate-500">{CASE_DATA.subtitle}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 md:w-64">
+                  <Card className="rounded-2xl border-slate-200 shadow-none">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-500">
+                        <Trophy className="h-4 w-4" />
+                        Pontszám
+                      </div>
+                      <div className="mt-2 text-2xl font-bold">{score}</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="rounded-2xl border-slate-200 shadow-none">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-500">
+                        <FileText className="h-4 w-4" />
+                        Kártyák
+                      </div>
+                      <div className="mt-2 text-2xl font-bold">
+                        {revealedCount}/{CASE_DATA.cards.length}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/70">
+                <img
+                  src="/mnt/data/versailles_peace_conference_1919_1.png"
+                  alt="Korabeli jelenet a versailles-i béketárgyalások hangulatával"
+                  className="h-auto w-full max-h-64 cursor-pointer object-cover"
+                  onClick={() => setShowImageModal(true)}
+                />
+              </div>
+
+              <div className="space-y-2 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                <strong>Forráselemzés – kép</strong>
+                <ul className="list-disc space-y-1 pl-5">
+                  <li>Kik láthatók a képen? Milyen szerepeket sejtesz?</li>
+                  <li>Milyen térben zajlik az esemény? Mit sugall a környezet?</li>
+                  <li>Milyen viszonyokat jelezhet a szereplők elhelyezkedése?</li>
+                  <li>Milyen információ NEM derül ki a képből, de fontos lenne?</li>
+                </ul>
+                <p className="italic">Írj egy rövid következtetést a kép alapján, és figyeld meg, segít-e a nyomozásban.</p>
+                <p className="text-xs font-semibold uppercase tracking-wide">Képi forrásra való érdemi hivatkozás: +5 pont</p>
+              </div>
+
+              <p className="text-base leading-7 text-slate-700">{CASE_DATA.intro}</p>
+              <div className="rounded-2xl bg-slate-100 p-4 text-sm leading-6 text-slate-700">
+                <strong>Tanulási fókusz:</strong> {CASE_DATA.learningGoal}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Thermometer className="h-5 w-5" />
+                Nyomozási sávok
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {([
+                ["Motiváció", trackProgress.motivation],
+                ["Lehetőség", trackProgress.opportunity],
+                ["Koordináció", trackProgress.coordination],
+                ["Képi forrás használata", imageSourceScore],
+              ] as const).map(([label, value]) => (
+                <div key={label} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm text-slate-700">
+                    <span>{label}</span>
+                    <span>{trackStatus(value).label}</span>
+                  </div>
+                  <div className="h-4 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div className={`h-full transition-all ${trackStatus(value).color}`} style={{ width: `${value}%` }} />
+                  </div>
+                </div>
+              ))}
+
+              <div className="rounded-2xl bg-slate-100 p-4">
+                <div className="flex items-center justify-between text-sm text-slate-600">
+                  <span>Általános előrehaladás: {progress}%</span>
+                  <span className="inline-flex items-center gap-2 font-medium">
+                    <Flame className="h-4 w-4" />
+                    Utolsó visszajelzés: {lastThermo.label}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-500">
+                A sávok külön mutatják, mennyire erős a gondolatmeneted a motiváció, a lehetőség, a koordináció és a képi forrás használatának értelmezésében.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Információkártyák</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                {visibleCards.map((card) => (
+                  <Card key={card.id} className="rounded-2xl border-slate-200 shadow-none">
+                    <CardHeader className="pb-3">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <CardTitle className="text-base">{card.title}</CardTitle>
+                        {kindBadge(card.kind)}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="leading-7 text-slate-700">{card.text}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {card.tags.map((tag) => (
+                          <Badge key={tag} variant="outline">
+                            #{tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Lépj tovább a nyomozásban</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant={interactionMode === "question" ? "default" : "outline"}
+                  onClick={() => setInteractionMode("question")}
+                  className="rounded-2xl"
+                  disabled={gameOver}
+                >
+                  Eldöntendő kérdés
+                </Button>
+                <Button
+                  variant={interactionMode === "conclusion" ? "default" : "outline"}
+                  onClick={() => setInteractionMode("conclusion")}
+                  className="rounded-2xl"
+                  disabled={gameOver}
+                >
+                  Következtetés
+                </Button>
+              </div>
+
+              <Textarea
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                placeholder={
+                  interactionMode === "question"
+                    ? "Például: A módosítás a hivatalos példány elkészítése során történt?"
+                    : "Például: A brit érdek önmagában nem bizonyítja Harrington részvételét."
+                }
+                className="min-h-32 rounded-2xl"
+                disabled={gameOver}
+              />
+
+              <Button onClick={handleAnalyze} className="w-full rounded-2xl" disabled={gameOver || !currentInput.trim()}>
+                Elemzés kérése és következő kártya
+              </Button>
+
+              <p className="text-sm leading-6 text-slate-500">
+                Minden válasz után a rendszer visszajelez, majd megnyit egy új információkártyát.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Gyanúsítottak kizárása</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-slate-600">
+                Válassz ki egy szereplőt, akit kizársz. Helyes kizárás: +150 pont indoklással, hiányos indoklással +50 pont, hibás kizárás: -50 pont. Csak akkor zárj ki, ha már megjelent a releváns információkártya.
+              </p>
+
+              <Textarea
+                value={exclusionReason}
+                onChange={(e) => setExclusionReason(e.target.value)}
+                placeholder="Indokold meg a kizárást (pl. nem volt jelen / nem volt hozzáférése)"
+                className="min-h-20 rounded-2xl"
+                disabled={gameOver}
+              />
+
+              <div className="flex flex-wrap gap-2">
+                {CASE_DATA.suspects.map((suspect) => (
+                  <Button
+                    key={suspect}
+                    variant="outline"
+                    className="rounded-2xl"
+                    disabled={excludedSuspects.includes(suspect) || gameOver}
+                    onClick={() => handleExclude(suspect)}
+                  >
+                    {suspect}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Gyanúsítás</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                Bármely ponton meggyanúsíthatod a tettest vagy a tetteseket. Helyes megoldásért <strong>+1000</strong> pont jár, helytelenért <strong>-500</strong> pont.
+              </div>
+
+              <Input
+                value={accusationNames}
+                onChange={(e) => setAccusationNames(e.target.value)}
+                placeholder="Például: Elena Kovács és Dubois"
+                className="rounded-2xl"
+                disabled={gameOver}
+              />
+              <Textarea
+                value={accusationReason}
+                onChange={(e) => setAccusationReason(e.target.value)}
+                placeholder="Indokold meg: mi történt, hogyan történt, és miért kellett két ember?"
+                className="min-h-32 rounded-2xl"
+                disabled={gameOver}
+              />
+              <Button
+                onClick={handleAccusation}
+                variant="destructive"
+                className="w-full rounded-2xl"
+                disabled={gameOver || !accusationNames.trim() || !accusationReason.trim()}
+              >
+                Gyanúsítás beküldése
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Nyomozási napló</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[420px] pr-4">
+                <div className="space-y-4">
+                  {history.length === 0 && (
+                    <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">
+                      Még nincs bejegyzés. Írj egy kérdést vagy következtetést az első kártya alapján.
+                    </div>
+                  )}
+                  {history.map((item, index) => (
+                    <Card key={`${item.type}-${index}`} className="rounded-2xl border-slate-200 shadow-none">
+                      <CardContent className="space-y-3 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <Badge variant="outline">
+                            {item.type === "question"
+                              ? "Eldöntendő kérdés"
+                              : item.type === "conclusion"
+                                ? "Következtetés"
+                                : item.type === "exclusion"
+                                  ? "Kizárás"
+                                  : "Gyanúsítás"}
+                          </Badge>
+                          <Badge
+                            className={
+                              item.result.level === "forró"
+                                ? "bg-green-500 text-white"
+                                : item.result.level === "meleg"
+                                  ? "bg-yellow-400 text-black"
+                                  : "bg-red-500 text-white"
+                            }
+                          >
+                            {item.result.level.charAt(0).toUpperCase() + item.result.level.slice(1)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-500">A(z) {item.cardNumber}. kártya után</p>
+                        <p className="leading-7 text-slate-800">{item.content}</p>
+                        <Separator />
+                        <p className="text-sm leading-6 text-slate-600">{item.result.feedback}</p>
+                        {!!item.result.imageBonus && item.result.imageBonus > 0 && (
+                          <p className="text-xs font-semibold text-emerald-700">Képi forrás bónusz: +{item.result.imageBonus} pont</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {showSolution && (
+            <Card className="rounded-2xl border-emerald-200 bg-emerald-50 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl text-emerald-900">Megoldás és tanári visszajelzés</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-emerald-950">
+                <p>
+                  <strong>Elkövetők:</strong> {CASE_DATA.solution.culprits.join(" és ")}
+                </p>
+                <p>
+                  <strong>Mi történt?</strong> {CASE_DATA.solution.summary}
+                </p>
+                <p>
+                  <strong>Miért kellett két ember?</strong> {CASE_DATA.solution.whyTwo}
+                </p>
+                <div className="rounded-2xl bg-white/70 p-4 text-sm leading-6">
+                  <strong>Reflexió:</strong> A legerősebb csapdák Harrington látványos motivációja és a brit érdek túlértékelése voltak. A kulcs nem az általános politikai haszon, hanem a nyelvi beavatkozás és az adminisztratív hozzáférés együttes jelenléte.
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="flex flex-col gap-3 p-4 md:flex-row">
+              <Button onClick={resetGame} variant="outline" className="rounded-2xl">
+                Újrakezdés
+              </Button>
+              <Button onClick={() => setShowSolution((prev) => !prev)} variant="secondary" className="rounded-2xl">
+                {showSolution ? "Megoldás elrejtése" : "Megoldás megjelenítése"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-slate-200 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <AlertCircle className="h-5 w-5" />
+                Fejlesztői megjegyzés
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm leading-6 text-slate-600">
+              <p>Ez egy egyfájlos működő prototípus. A visszajelzés kulcsszóalapú értékelést használ, ezért továbbfejleszthető részletesebb szabályrendszerrel, tanári móddal, több esettel vagy adaptív nehézségi szinttel.</p>
+              <p>
+                Belső önellenőrzés: {selfTestsPassed ? <span className="font-semibold text-emerald-700">rendben</span> : <span className="font-semibold text-red-700">hiba van a segédfüggvényekben</span>}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {showImageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setShowImageModal(false)}>
+          <img
+            src="/mnt/data/versailles_peace_conference_1919_1.png"
+            alt="Nagyított kép"
+            className="max-h-full max-w-full rounded-2xl"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
