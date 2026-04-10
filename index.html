@@ -1,11 +1,177 @@
 <!DOCTYPE html>
-<html>
+<html lang="hu">
 <head>
 <meta charset="UTF-8">
-<title>Nyomozó</title>
+<title>Történelmi nyomozó</title>
+
+<style>
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  background: linear-gradient(to right, #e0e7ff, #f8fafc);
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.panel {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  height: 80vh;
+  overflow-y: auto;
+}
+
+.card {
+  background: #f1f5f9;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+}
+
+button {
+  margin: 5px;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+textarea {
+  width: 100%;
+  height: 80px;
+}
+
+#thermo {
+  height: 20px;
+  width: 100%;
+  background: #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+#bar {
+  height: 100%;
+  width: 0%;
+  background: red;
+}
+</style>
 </head>
+
 <body>
-<h1>Működik 🎉</h1>
-<p>Ha ezt látod, akkor a Vercel rendben van.</p>
+
+<h1>A két példány rejtélye</h1>
+
+<div id="thermo"><div id="bar"></div></div>
+
+<div class="container">
+
+<div class="panel" id="cardsPanel"></div>
+
+<div class="panel">
+<textarea id="input"></textarea>
+<button onclick="analyze()">Elemzés</button>
+<div id="feedback"></div>
+</div>
+
+<div class="panel" id="suspectsPanel"></div>
+
+</div>
+
+<script>
+const cards = [
+"A dokumentumot zárt tárgyaláson vitatták meg.",
+"Két példány készült.",
+"A módosítás csak a hivatalos példányban jelent meg.",
+"Elena tolmács volt.",
+"A dokumentumot gépelték.",
+"A diktálás során két ember volt jelen.",
+"A módosítás nem véletlen.",
+"Dubois felügyelte a folyamatot.",
+"Pierre futár csak kész dokumentumot vitt.",
+"Marie csak utólag volt jelen."
+];
+
+const suspects = [
+"Elena Kovács",
+"Dubois",
+"Harrington",
+"Wilson",
+"Pierre",
+"Marie"
+];
+
+let index = 0;
+let progress = 0;
+let score = 0;
+
+function showCard() {
+  if(index < cards.length){
+    document.getElementById("cardsPanel").innerHTML =
+      "<div class='card'>" + cards[index] + "</div>" +
+      document.getElementById("cardsPanel").innerHTML;
+    index++;
+  }
+}
+
+function analyze(){
+  const input = document.getElementById("input").value.toLowerCase();
+
+  let feedback = "";
+
+  if(input.includes("két") || input.includes("dikt") || input.includes("nyelv")){
+    progress += 20;
+    feedback = "Jó irány (zöld)";
+  } else if(input.length > 5){
+    progress += 10;
+    feedback = "Részben jó (sárga)";
+  } else {
+    feedback = "Nem segít (piros)";
+  }
+
+  if(progress > 100) progress = 100;
+
+  const bar = document.getElementById("bar");
+  bar.style.width = progress + "%";
+
+  if(progress < 40) bar.style.background = "red";
+  else if(progress < 70) bar.style.background = "yellow";
+  else bar.style.background = "green";
+
+  document.getElementById("feedback").innerText = feedback;
+
+  showCard();
+}
+
+function loadSuspects(){
+  let html = "";
+  suspects.forEach(s=>{
+    html += "<button onclick='exclude(\""+s+"\")'>"+s+"</button>";
+  });
+  document.getElementById("suspectsPanel").innerHTML = html;
+}
+
+function exclude(name){
+  if(name === "Pierre" || name === "Marie"){
+    score += 150;
+    alert("Helyes kizárás! +150 pont");
+  } else {
+    score -= 50;
+    alert("Helytelen kizárás! -50 pont");
+  }
+}
+
+showCard();
+loadSuspects();
+</script>
+
 </body>
 </html>
